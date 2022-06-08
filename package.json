@@ -1,0 +1,18 @@
+{
+  "name": "driving_test_booking",
+  "version": "1.0.0",
+  "description": "",
+  "main": "check-calender.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.1",
+    "node-fetch": "^2.6.7",
+    "node-schedule": "^2.1.0",
+    "pushover-notifications": "^1.2.2"
+  }
+}
