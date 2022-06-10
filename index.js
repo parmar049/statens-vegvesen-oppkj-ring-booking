@@ -4,7 +4,7 @@ const nodeSchedule = require('node-schedule');
 
 let trafficStations = [{ stationId: "081", stationName: "Risiloka" },
 { stationId: "051", stationName: "Drobak" },
-// { stationId: "071", stationName: "Lilistrom"},
+{ stationId: "071", stationName: "Lilistrom"},
 { stationId: "141", stationName: "Hønefoss"},];
 let sentNotifications = new Set()
 const COOKIE = process.env.COOKIE;
@@ -13,13 +13,13 @@ let push = new Push({
     token: process.env.PUSHOVER_TOKEN,
 })
 
-const job = nodeSchedule.scheduleJob('*/10 * * * * *', function () {
+const job =  nodeSchedule.scheduleJob('*/10 * * * * *', function () {
     try {
+        
         trafficStations.forEach(trafficStation => {
 
             let URL = "https://forerett-adapter.atlas.vegvesen.no/provetimer?v=2&arbeidsflytId=878144905&klasse=B&trafikkstasjonId={stationId}"
-                .replace("{stationId}", trafficStation.stationId);
-    
+                .replace("{stationId}", trafficStation.stationId);    
             fetch(URL, {
                 "headers": {
                     "accept": "*/*",
@@ -37,32 +37,46 @@ const job = nodeSchedule.scheduleJob('*/10 * * * * *', function () {
                 "body": null,
                 "method": "GET"
             })
-                .then(res => res.json())
-                .then(schedules => {
+                .then(res => {
+                    if(res.ok) {
+                        return res.json();
+                    } else {
+                        throw "Invalid response from vegebasen. Response Status "+res.status
+                    }                
+                
+                }).then(schedules => {                                                    
                     if (schedules.length == 0) {
                         console.log("No Schedule present at the moment for " + trafficStation.stationName)
-                    } else {                                                                 
-                        schedules.forEach((schedule, notificationCount) => {                        
-                            if (sentNotifications.has(trafficStation.stationName + schedule.start)) {
-                                console.log("Notifications already sent");                        
-                            } else {                                                                    
+                    } else {  
+                        console.log("Response from vegebasen " +JSON.stringify(schedules)); 
+
+                        let pushSentThisIteration = 0;
+                        for(let i = 0; i < schedules.length ; i++) {
+                            if (sentNotifications.has(trafficStation.stationName + schedules[i].start)) {
+                                console.log("Notifications already sent for school " + trafficStation.stationName + " for the time " +schedules[i].start );                        
+                            } else {
+
+                                   if(pushSentThisIteration >= 5){
+                                       break;
+                                   }                                    
                                     let msg = {
-                                        message: schedule.start,
+                                        message: schedules[i].start,
                                         title: trafficStation.stationName,
                                         sound: 'magic',
                                         priority: 1
                                     }
+                                    pushSentThisIteration++;
                                     push.send(msg, function (err, result) {
                                         if (err) {
                                             console.log("Unable to send notifications", err);
                                         } else {
-                                            console.log("Sent Notification for school " + trafficStation.stationName + " for the time " +schedule.start);
-                                            notificationCount++;
-                                            sentNotifications.add(trafficStation.stationName + schedule.start)
+                                            console.log("Sent Notification for school " + trafficStation.stationName + " for the time " +schedules[i].start);                                            
+                                            sentNotifications.add(trafficStation.stationName + schedules[i].start);                                        
                                         }
-                                    })                                                                                      
+                                    })                                    
                             }
-                        })
+
+                        }                        
                     }
                 })
                 .catch(error => console.error(error));;
