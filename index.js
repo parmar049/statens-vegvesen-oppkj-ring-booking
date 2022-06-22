@@ -3,9 +3,9 @@ const Push = require('pushover-notifications')
 const nodeSchedule = require('node-schedule');
 
 let trafficStations = [{ stationId: "081", stationName: "Risiloka" },
-{ stationId: "051", stationName: "Drobak" },
+//{ stationId: "051", stationName: "Drobak" },
 { stationId: "071", stationName: "Lilistrom"},
-{ stationId: "141", stationName: "Hønefoss"},];
+{ stationId: "061", stationName: "Billingstad"}];
 let sentNotifications = new Set()
 const COOKIE = process.env.COOKIE;
 let push = new Push({
@@ -19,7 +19,7 @@ const job =  nodeSchedule.scheduleJob('*/10 * * * * *', function () {
         trafficStations.forEach(trafficStation => {
 
             let URL = "https://forerett-adapter.atlas.vegvesen.no/provetimer?v=2&arbeidsflytId=878144905&klasse=B&trafikkstasjonId={stationId}"
-                .replace("{stationId}", trafficStation.stationId);    
+                .replace("{stationId}", trafficStation.stationId);
             fetch(URL, {
                 "headers": {
                     "accept": "*/*",
@@ -66,6 +66,7 @@ const job =  nodeSchedule.scheduleJob('*/10 * * * * *', function () {
                                         priority: 1
                                     }
                                     pushSentThisIteration++;
+                                    try {
                                     push.send(msg, function (err, result) {
                                         if (err) {
                                             console.log("Unable to send notifications", err);
@@ -73,7 +74,10 @@ const job =  nodeSchedule.scheduleJob('*/10 * * * * *', function () {
                                             console.log("Sent Notification for school " + trafficStation.stationName + " for the time " +schedules[i].start);                                            
                                             sentNotifications.add(trafficStation.stationName + schedules[i].start);                                        
                                         }
-                                    })                                    
+                                    })}
+                                     catch(err) {
+                                            console.error(err)
+                                     }
                             }
 
                         }                        
